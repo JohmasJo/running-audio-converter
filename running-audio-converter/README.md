@@ -4,11 +4,19 @@
 
 ## ✨ 功能特点
 
+### 标准版本 (`converter.py`)
 - 🎵 **自动 BPM 检测** - 智能分析音频原始节奏
 - ⚡ **时间拉伸** - 调整到 180 BPM 而不改变音调
 - 🎛️ **节拍器** - 可选添加清晰的节拍提示音
 - 📁 **批量处理** - 支持一次处理多个文件
 - 🎧 **高质量输出** - 保持原始音质
+
+### 变速歌曲版本 (`converter_variable.py`) 🆕
+- 📊 **滑动窗口 BPM 检测** - 每 10 秒检测一次 BPM 变化
+- 📈 **BPM 时间线分析** - 自动找到 BPM 变化点
+- 🔀 **分段处理** - 每段独立拉伸到目标 BPM
+- 🌊 **交叉渐变** - 平滑连接各段，无接缝
+- ⚙️ **可调节参数** - 窗口大小、灵敏度、渐变时长
 
 ## 📦 安装依赖
 
@@ -36,29 +44,42 @@ pip install -r requirements.txt
 
 ## 🚀 使用方法
 
-### 基础用法（无节拍器）
+### 🎵 标准版本（固定 BPM 歌曲）
+
 ```bash
+# 基础用法（无节拍器）
 python converter.py your-song.mp3
-```
 
-### 添加节拍器
-```bash
+# 添加节拍器
 python converter.py your-song.mp3 --metronome
-```
 
-### 指定目标 BPM（默认 180）
-```bash
+# 指定目标 BPM（默认 180）
 python converter.py your-song.mp3 --target-bpm 170
-```
 
-### 批量处理
-```bash
+# 批量处理
 python converter.py *.mp3 --metronome
+
+# 指定输出目录
+python converter.py your-song.mp3 --output-dir ./running-mix
 ```
 
-### 指定输出目录
+### 🎶 变速歌曲版本（BPM 变化的歌曲）
+
 ```bash
-python converter.py your-song.mp3 --output-dir ./running-mix
+# 基础用法（自动检测 BPM 变化）
+python converter_variable.py your-song.mp3
+
+# 添加节拍器
+python converter_variable.py your-song.mp3 --metronome
+
+# 自定义窗口大小（更精细的检测）
+python converter_variable.py your-song.mp3 --window-size 5 --hop-size 2
+
+# 调整 BPM 变化检测灵敏度
+python converter_variable.py your-song.mp3 --bpm-threshold 5
+
+# 指定目标 BPM
+python converter_variable.py your-song.mp3 --target-bpm 175
 ```
 
 ## 📋 参数说明
