@@ -14,7 +14,7 @@
 
 ### 前置要求
 
-**必须安装 ffmpeg**（两个版本都需要）：
+**必须安装 ffmpeg**：
 
 ```bash
 # Ubuntu/Debian
@@ -28,16 +28,10 @@ brew install ffmpeg
 # 或使用 choco: choco install ffmpeg
 ```
 
-### Python 版本
+### 安装 Python 依赖
 
 ```bash
 pip install -r requirements.txt
-```
-
-### Node.js 版本（备选）
-
-```bash
-npm install
 ```
 
 ## 🚀 使用方法

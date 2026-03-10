@@ -26,12 +26,7 @@ ffmpeg -version
 
 ---
 
-## 🚀 第二步：选择版本
-
-### 方案 A：Python 版本（功能完整）
-
-**优点：** 自动 BPM 检测、高质量时间拉伸
-**缺点：** 需要安装 Python 依赖
+## 🚀 第二步：安装并运行
 
 ```bash
 cd /home/tomoya/data/running-audio-converter
@@ -49,84 +44,46 @@ python3 converter.py your-song.mp3 --metronome
 python3 gui_converter.py
 ```
 
-### 方案 B：Node.js 版本（轻量备选）
-
-**优点：** 依赖少、安装快
-**缺点：** 需要手动指定原始 BPM
-
-```bash
-cd /home/tomoya/data/running-audio-converter
-
-# 依赖已安装（npm install 已运行）
-
-# 使用（需要指定原始 BPM）
-node converter-node.js your-song.mp3 --original-bpm 120
-
-# 添加节拍器
-node converter-node.js your-song.mp3 --original-bpm 120 --metronome
-```
-
 ---
 
 ## 🎯 常用命令
 
 ### 基础转换
 ```bash
-# Python
 python3 converter.py song.mp3
-
-# Node.js（假设原曲 120 BPM）
-node converter-node.js song.mp3 --original-bpm 120
 ```
 
 ### 添加节拍器
 ```bash
-# Python
 python3 converter.py song.mp3 --metronome
-
-# Node.js
-node converter-node.js song.mp3 --original-bpm 120 --metronome
 ```
 
 ### 自定义目标 BPM
 ```bash
-# Python（目标 170 BPM）
 python3 converter.py song.mp3 --target-bpm 170
-
-# Node.js
-node converter-node.js song.mp3 --original-bpm 120 --target-bpm 170
 ```
 
 ### 批量处理
 ```bash
-# Python
 python3 converter.py *.mp3 --metronome
-
-# Node.js
-node converter-node.js *.mp3 --original-bpm 120 --metronome
 ```
 
 ### 指定输出目录
 ```bash
-# Python
 python3 converter.py song.mp3 --output-dir ./running-mix
-
-# Node.js
-node converter-node.js song.mp3 --original-bpm 120 --output-dir ./running-mix
 ```
 
 ---
 
 ## 📊 参数说明
 
-| 参数 | Python | Node.js | 说明 |
-|------|--------|---------|------|
-| 目标 BPM | `--target-bpm` | `-b, --target-bpm` | 默认 180 |
-| 原始 BPM | 自动检测 | `--original-bpm` | Node 版必须 |
-| 节拍器 | `--metronome` | `-m, --metronome` | 添加节拍器 |
-| 节拍器音量 | `--metronome-volume` | `-v, --metronome-volume` | 0.0-1.0 |
-| 节拍器频率 | `--beat-frequency` | `-f, --beat-frequency` | Hz |
-| 输出目录 | `--output-dir` | `-d, --output-dir` | 输出文件夹 |
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--target-bpm` | 目标 BPM | 180 |
+| `--metronome` | 添加节拍器音轨 | 关闭 |
+| `--metronome-volume` | 节拍器音量 (0.0-1.0) | 0.3 |
+| `--beat-frequency` | 节拍器频率 (Hz) | 1000 |
+| `--output-dir` | 输出目录 | 原目录 |
 
 ---
 
