@@ -415,6 +415,8 @@ class RunningAudioConverterGUI:
 
 
 def main():
+    import signal
+    
     root = tk.Tk()
     
     # 设置样式
@@ -425,7 +427,28 @@ def main():
     style.configure('Accent.TButton', foreground='white', background='#0078D7')
     
     app = RunningAudioConverterGUI(root)
-    root.mainloop()
+    
+    # 处理 Ctrl+C 信号
+    def signal_handler(sig, frame):
+        print("\n⚠️  收到中断信号，正在退出...")
+        root.quit()
+        root.destroy()
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # 定期检查信号（让信号处理生效）
+    def check_signals():
+        root.after(100, check_signals)
+    
+    root.after(100, check_signals)
+    
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        print("\n⚠️  程序已中断")
+        root.destroy()
+        sys.exit(0)
 
 
 if __name__ == '__main__':
