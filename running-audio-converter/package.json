@@ -1,0 +1,23 @@
+{
+  "name": "running-audio-converter",
+  "version": "1.0.0",
+  "description": "🏃 跑步音频转换器 - 将任意音频转换为 180 BPM 版本",
+  "main": "converter-node.js",
+  "scripts": {
+    "start": "node converter-node.js",
+    "gui": "node gui-node.js"
+  },
+  "keywords": [
+    "audio",
+    "bpm",
+    "running",
+    "converter",
+    "time-stretch"
+  ],
+  "author": "Niko",
+  "license": "MIT",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.2",
+    "commander": "^11.0.0"
+  }
+}
