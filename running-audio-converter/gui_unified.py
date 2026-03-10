@@ -3,6 +3,8 @@
 """
 🏃 跑步音频转换器 - 统一 GUI 界面
 整合所有转换器，提供友好的图形界面
+
+修复：中文编码问题
 """
 
 import tkinter as tk
@@ -13,15 +15,48 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# 设置默认编码为 UTF-8
+import locale
+locale.setlocale(locale.LC_ALL, '')
+
 # 导入转换器
 try:
     from converter import AudioConverter, MetronomeGenerator
     from converter_variable import VariableBPMConverter
     from converter_variable_fast import convert_fast
+    from converter_variable_gpu import convert_gpu
     HAS_CONVERTERS = True
 except ImportError as e:
     HAS_CONVERTERS = False
     print(f"⚠️  导入转换器失败：{e}")
+
+
+# 尝试设置中文字体
+def setup_chinese_font():
+    """设置中文字体"""
+    import platform
+    
+    system = platform.system()
+    
+    if system == "Windows":
+        # Windows 常用中文字体
+        fonts = ["Microsoft YaHei", "SimHei", "SimSun", "KaiTi"]
+    elif system == "Darwin":
+        # macOS 常用中文字体
+        fonts = ["PingFang SC", "Heiti SC", "STHeiti", "Arial Unicode MS"]
+    else:
+        # Linux 常用中文字体
+        fonts = ["WenQuanYi Micro Hei", "WenQuanYi Zen Hei", "Noto Sans CJK SC", "SimHei"]
+    
+    for font in fonts:
+        try:
+            # 测试字体是否可用
+            test_font = tk.font.Font(family=font, size=10)
+            return font
+        except Exception:
+            continue
+    
+    return None  # 使用默认字体
 
 
 class RunningAudioConverterGUI:
@@ -29,9 +64,12 @@ class RunningAudioConverterGUI:
     
     def __init__(self, root):
         self.root = root
-        self.root.title("🏃 跑步音频转换器 - 180 BPM Edition")
-        self.root.geometry("800x700")
-        self.root.minsize(700, 600)
+        self.root.title("Running Audio Converter - 180 BPM")
+        self.root.geometry("900x750")
+        self.root.minsize(800, 650)
+        
+        # 设置中文字体
+        self.chinese_font = setup_chinese_font()
         
         # 状态变量
         self.files = []
@@ -55,30 +93,30 @@ class RunningAudioConverterGUI:
         
         title_label = ttk.Label(
             title_frame,
-            text="🏃 跑步音频转换器",
-            font=("Helvetica", 18, "bold")
+            text="Running Audio Converter (180 BPM)",
+            font=("Helvetica", 16, "bold")
         )
         title_label.pack(side=tk.LEFT)
         
         subtitle_label = ttk.Label(
             title_frame,
-            text="  -  将任意音频转换为 180 BPM 跑步版本",
+            text="  -  Convert any audio to 180 BPM for running",
             font=("Helvetica", 10)
         )
         subtitle_label.pack(side=tk.LEFT)
         
         # ===== 转换器选择区域 =====
-        converter_frame = ttk.LabelFrame(main_frame, text="🔧 选择转换器", padding="10")
+        converter_frame = ttk.LabelFrame(main_frame, text="Converter Type", padding="10")
         converter_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         converter_frame.columnconfigure(1, weight=1)
         
         self.converter_var = tk.StringVar(value="standard")
         
         converters = [
-            ("standard", "🎵 标准版 - 固定 BPM 歌曲", "快速处理 BPM 固定的歌曲"),
-            ("variable", "🎶 变速版 - 高质量", "处理 BPM 变化的歌曲，质量优先"),
-            ("variable_fast", "🐇 变速版 - 快速", "处理 BPM 变化的歌曲，速度优先"),
-            ("variable_gpu", "⚡ 变速版 - GPU 加速", "需要 NVIDIA 显卡，速度最快"),
+            ("standard", "Standard - Fixed BPM Songs", "Fast processing for songs with fixed BPM"),
+            ("variable", "Variable - High Quality", "For songs with BPM changes, quality first"),
+            ("variable_fast", "Variable - Fast", "For songs with BPM changes, speed first"),
+            ("variable_gpu", "Variable - GPU Accelerated", "Requires NVIDIA GPU, fastest speed"),
         ]
         
         for i, (value, text, desc) in enumerate(converters):
@@ -95,7 +133,7 @@ class RunningAudioConverterGUI:
             desc_label.grid(row=i, column=1, sticky=tk.W, padx=(10, 0), pady=2)
         
         # ===== 文件选择区域 =====
-        file_frame = ttk.LabelFrame(main_frame, text="📁 文件选择", padding="10")
+        file_frame = ttk.LabelFrame(main_frame, text="File Selection", padding="10")
         file_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         file_frame.columnconfigure(0, weight=1)
         
@@ -107,22 +145,22 @@ class RunningAudioConverterGUI:
         btn_frame = ttk.Frame(file_frame)
         btn_frame.grid(row=1, column=0, sticky=tk.W)
         
-        add_btn = ttk.Button(btn_frame, text="添加文件", command=self.add_files)
+        add_btn = ttk.Button(btn_frame, text="Add Files", command=self.add_files)
         add_btn.pack(side=tk.LEFT, padx=(0, 5))
         
-        remove_btn = ttk.Button(btn_frame, text="移除选中", command=self.remove_selected)
+        remove_btn = ttk.Button(btn_frame, text="Remove Selected", command=self.remove_selected)
         remove_btn.pack(side=tk.LEFT, padx=(0, 5))
         
-        clear_btn = ttk.Button(btn_frame, text="清空列表", command=self.clear_files)
+        clear_btn = ttk.Button(btn_frame, text="Clear All", command=self.clear_files)
         clear_btn.pack(side=tk.LEFT)
         
         # ===== 参数设置区域 =====
-        params_frame = ttk.LabelFrame(main_frame, text="⚙️ 参数设置", padding="10")
+        params_frame = ttk.LabelFrame(main_frame, text="Parameters", padding="10")
         params_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         params_frame.columnconfigure(1, weight=1)
         
         # 目标 BPM
-        ttk.Label(params_frame, text="目标 BPM:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Label(params_frame, text="Target BPM:").grid(row=0, column=0, sticky=tk.W, pady=5)
         self.bpm_var = tk.StringVar(value="180")
         bpm_spinbox = ttk.Spinbox(params_frame, from_=60, to=220, textvariable=self.bpm_var, width=10)
         bpm_spinbox.grid(row=0, column=1, sticky=tk.W, padx=(10, 0), pady=5)
@@ -131,15 +169,15 @@ class RunningAudioConverterGUI:
         self.variable_params_frame = ttk.Frame(params_frame)
         self.variable_params_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E))
         
-        ttk.Label(self.variable_params_frame, text="窗口大小 (秒):").grid(row=0, column=0, sticky=tk.W, pady=3)
+        ttk.Label(self.variable_params_frame, text="Window Size (s):").grid(row=0, column=0, sticky=tk.W, pady=3)
         self.window_size_var = tk.StringVar(value="30.0")
         ttk.Entry(self.variable_params_frame, textvariable=self.window_size_var, width=10).grid(row=0, column=1, padx=(10, 0), pady=3)
         
-        ttk.Label(self.variable_params_frame, text="跳跃大小 (秒):").grid(row=0, column=2, sticky=tk.W, padx=(20, 0), pady=3)
+        ttk.Label(self.variable_params_frame, text="Hop Size (s):").grid(row=0, column=2, sticky=tk.W, padx=(20, 0), pady=3)
         self.hop_size_var = tk.StringVar(value="15.0")
         ttk.Entry(self.variable_params_frame, textvariable=self.hop_size_var, width=10).grid(row=0, column=3, padx=(10, 0), pady=3)
         
-        ttk.Label(self.variable_params_frame, text="BPM 阈值:").grid(row=0, column=4, sticky=tk.W, padx=(20, 0), pady=3)
+        ttk.Label(self.variable_params_frame, text="BPM Threshold:").grid(row=0, column=4, sticky=tk.W, padx=(20, 0), pady=3)
         self.threshold_var = tk.StringVar(value="15.0")
         ttk.Entry(self.variable_params_frame, textvariable=self.threshold_var, width=10).grid(row=0, column=5, padx=(10, 0), pady=3)
         
@@ -147,13 +185,13 @@ class RunningAudioConverterGUI:
         self.metronome_var = tk.BooleanVar(value=False)
         metronome_check = ttk.Checkbutton(
             params_frame,
-            text="🎛️ 添加节拍器",
+            text="Add Metronome",
             variable=self.metronome_var
         )
         metronome_check.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=5)
         
         # 节拍器音量
-        ttk.Label(params_frame, text="节拍器音量:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        ttk.Label(params_frame, text="Metronome Volume:").grid(row=3, column=0, sticky=tk.W, pady=5)
         self.metro_volume_var = tk.DoubleVar(value=0.3)
         volume_scale = ttk.Scale(
             params_frame,
@@ -166,7 +204,7 @@ class RunningAudioConverterGUI:
         volume_scale.grid(row=3, column=1, sticky=tk.W, padx=(10, 0), pady=5)
         
         # 节拍器频率
-        ttk.Label(params_frame, text="节拍器频率 (Hz):").grid(row=3, column=2, sticky=tk.W, padx=(20, 0), pady=5)
+        ttk.Label(params_frame, text="Metronome Frequency (Hz):").grid(row=3, column=2, sticky=tk.W, padx=(20, 0), pady=5)
         self.beat_freq_var = tk.StringVar(value="1000")
         freq_spinbox = ttk.Spinbox(
             params_frame,
@@ -178,16 +216,16 @@ class RunningAudioConverterGUI:
         freq_spinbox.grid(row=3, column=3, sticky=tk.W, padx=(10, 0), pady=5)
         
         # 输出目录
-        ttk.Label(params_frame, text="输出目录:").grid(row=4, column=0, sticky=tk.W, pady=5)
+        ttk.Label(params_frame, text="Output Directory:").grid(row=4, column=0, sticky=tk.W, pady=5)
         self.output_dir_var = tk.StringVar(value="")
         output_entry = ttk.Entry(params_frame, textvariable=self.output_dir_var, width=40)
         output_entry.grid(row=4, column=1, columnspan=2, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
         
-        browse_btn = ttk.Button(params_frame, text="浏览...", command=self.browse_output_dir)
+        browse_btn = ttk.Button(params_frame, text="Browse...", command=self.browse_output_dir)
         browse_btn.grid(row=4, column=3, padx=(5, 0), pady=5)
         
         # ===== 进度区域 =====
-        progress_frame = ttk.LabelFrame(main_frame, text="📊 进度", padding="10")
+        progress_frame = ttk.LabelFrame(main_frame, text="Progress", padding="10")
         progress_frame.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         progress_frame.columnconfigure(0, weight=1)
         
@@ -200,20 +238,20 @@ class RunningAudioConverterGUI:
         )
         self.progress_bar.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 5))
         
-        self.status_label = ttk.Label(progress_frame, text="就绪", foreground="gray")
+        self.status_label = ttk.Label(progress_frame, text="Ready", foreground="gray")
         self.status_label.grid(row=1, column=0, sticky=tk.W)
         
         # ===== 转换按钮 =====
         self.convert_btn = ttk.Button(
             main_frame,
-            text="🚀 开始转换",
+            text="Start Conversion",
             command=self.start_conversion,
             style="Accent.TButton"
         )
         self.convert_btn.grid(row=5, column=0, columnspan=2, pady=10)
         
         # ===== 日志区域 =====
-        log_frame = ttk.LabelFrame(main_frame, text="📝 日志", padding="10")
+        log_frame = ttk.LabelFrame(main_frame, text="Log", padding="10")
         log_frame.grid(row=6, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         log_frame.columnconfigure(0, weight=1)
         log_frame.rowconfigure(0, weight=1)
@@ -230,8 +268,8 @@ class RunningAudioConverterGUI:
         # 检查依赖
         if not HAS_CONVERTERS:
             messagebox.showwarning(
-                "警告",
-                "转换器模块导入失败！\n\n请确保安装了依赖：\npip install -r requirements.txt"
+                "Warning",
+                "Converter modules import failed!\n\nPlease install dependencies:\npip install -r requirements.txt"
             )
     
     def on_converter_change(self):
@@ -248,17 +286,17 @@ class RunningAudioConverterGUI:
     def add_files(self):
         """添加文件"""
         filetypes = [
-            ("音频文件", "*.mp3 *.wav *.flac *.m4a *.ogg *.wma"),
-            ("所有文件", "*.*")
+            ("Audio files", "*.mp3 *.wav *.flac *.m4a *.ogg *.wma"),
+            ("All files", "*.*")
         ]
-        files = filedialog.askopenfilenames(title="选择音频文件", filetypes=filetypes)
+        files = filedialog.askopenfilenames(title="Select audio files", filetypes=filetypes)
         
         for file in files:
             if file not in self.files:
                 self.files.append(file)
                 self.file_listbox.insert(tk.END, os.path.basename(file))
         
-        self.log(f"添加了 {len(files)} 个文件")
+        self.log(f"Added {len(files)} file(s)")
     
     def remove_selected(self):
         """移除选中的文件"""
@@ -271,11 +309,11 @@ class RunningAudioConverterGUI:
         """清空文件列表"""
         self.files = []
         self.file_listbox.delete(0, tk.END)
-        self.log("已清空文件列表")
+        self.log("Cleared file list")
     
     def browse_output_dir(self):
         """浏览输出目录"""
-        directory = filedialog.askdirectory(title="选择输出目录")
+        directory = filedialog.askdirectory(title="Select output directory")
         if directory:
             self.output_dir_var.set(directory)
     
@@ -296,11 +334,11 @@ class RunningAudioConverterGUI:
     def start_conversion(self):
         """开始转换"""
         if not self.files:
-            messagebox.showwarning("警告", "请先添加音频文件！")
+            messagebox.showwarning("Warning", "Please add audio files first!")
             return
         
         if self.is_processing:
-            messagebox.showwarning("警告", "正在处理中，请稍候...")
+            messagebox.showwarning("Warning", "Processing in progress, please wait...")
             return
         
         self.is_processing = True
@@ -320,52 +358,46 @@ class RunningAudioConverterGUI:
             total_files = len(self.files)
             
             for i, file_path in enumerate(self.files):
-                self.update_status(f"处理中：{os.path.basename(file_path)}", (i / total_files) * 100)
-                self.log(f"\n📁 [{i+1}/{total_files}] 开始处理：{file_path}")
+                self.update_status(f"Processing: {os.path.basename(file_path)}", (i / total_files) * 100)
+                self.log(f"\n[{i+1}/{total_files}] Starting: {file_path}")
                 
                 try:
                     if converter_type == "standard":
-                        # 标准版
                         output_file = self.convert_standard(file_path, target_bpm, output_dir)
                     
                     elif converter_type == "variable":
-                        # 变速版 - 高质量
                         output_file = self.convert_variable(file_path, target_bpm, output_dir)
                     
                     elif converter_type == "variable_fast":
-                        # 变速版 - 快速
                         output_file = self.convert_variable_fast(file_path, target_bpm, output_dir)
                     
                     elif converter_type == "variable_gpu":
-                        # 变速版 - GPU 加速
                         output_file = self.convert_variable_gpu(file_path, target_bpm, output_dir)
                     
-                    self.log(f"✅ 完成：{output_file}")
+                    self.log(f"Done: {output_file}")
                 
                 except Exception as e:
-                    self.log(f"❌ 错误：{e}")
+                    self.log(f"Error: {e}")
                     import traceback
                     traceback.print_exc()
             
-            self.update_status("完成！", 100)
+            self.update_status("Completed!", 100)
             self.log("\n" + "=" * 40)
-            self.log("🎉 所有文件处理完成！")
+            self.log("All files processed successfully!")
             
-            messagebox.showinfo("完成", f"成功转换 {total_files} 个文件！")
+            messagebox.showinfo("Complete", f"Successfully converted {total_files} file(s)!")
         
         except Exception as e:
-            self.log(f"❌ 严重错误：{e}")
-            messagebox.showerror("错误", f"处理失败：{e}")
+            self.log(f"Fatal error: {e}")
+            messagebox.showerror("Error", f"Processing failed: {e}")
         
         finally:
             self.is_processing = False
             self.convert_btn.configure(state=tk.NORMAL)
-            self.update_status("就绪")
+            self.update_status("Ready")
     
     def convert_standard(self, file_path, target_bpm, output_dir):
         """标准版转换"""
-        from converter import AudioConverter
-        
         converter = AudioConverter(target_bpm=target_bpm)
         return converter.convert(
             file_path,
@@ -377,8 +409,6 @@ class RunningAudioConverterGUI:
     
     def convert_variable(self, file_path, target_bpm, output_dir):
         """变速版 - 高质量"""
-        from converter_variable import VariableBPMConverter
-        
         converter = VariableBPMConverter(
             target_bpm=target_bpm,
             window_size=float(self.window_size_var.get()),
@@ -389,8 +419,6 @@ class RunningAudioConverterGUI:
     
     def convert_variable_fast(self, file_path, target_bpm, output_dir):
         """变速版 - 快速"""
-        from converter_variable_fast import convert_fast
-        
         return convert_fast(
             file_path,
             target_bpm=target_bpm,
@@ -402,8 +430,6 @@ class RunningAudioConverterGUI:
     
     def convert_variable_gpu(self, file_path, target_bpm, output_dir):
         """变速版 - GPU 加速"""
-        from converter_variable_gpu import convert_gpu
-        
         return convert_gpu(
             file_path,
             target_bpm=target_bpm,
@@ -430,14 +456,14 @@ def main():
     
     # 处理 Ctrl+C 信号
     def signal_handler(sig, frame):
-        print("\n⚠️  收到中断信号，正在退出...")
+        print("\nReceived interrupt signal, exiting...")
         root.quit()
         root.destroy()
         sys.exit(0)
     
     signal.signal(signal.SIGINT, signal_handler)
     
-    # 定期检查信号（让信号处理生效）
+    # 定期检查信号
     def check_signals():
         root.after(100, check_signals)
     
@@ -446,7 +472,7 @@ def main():
     try:
         root.mainloop()
     except KeyboardInterrupt:
-        print("\n⚠️  程序已中断")
+        print("\nProgram interrupted")
         root.destroy()
         sys.exit(0)
 
